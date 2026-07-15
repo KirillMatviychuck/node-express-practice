@@ -1,0 +1,10 @@
+{
+  "name": "node-express-practice",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "KirillMatviychuck <kirill.matviychuck@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
