@@ -26,19 +26,29 @@ function decrement(num) {
     }
 }
 
+const incrementAsync = num => (dispatch, getState) => {
+    setTimeout(() => {
+        dispatch(increment(num))
+    }, 1000)
+}
+
 function createStore(reducer, initialState) {
 
     let state = initialState
     let subscribers = []
 
-    return {
+    const store = {
         getState() {
             return state
         },
         dispatch(action) {
-            const result = reducer(state, action)
-            state = result
-            subscribers.forEach(fn => fn())
+            if (typeof action === 'function') {
+                action(store.dispatch, store.getState)
+            } else {
+                const result = reducer(state, action)
+                state = result
+                subscribers.forEach(fn => fn())
+            }
         },
         subscribe(listener) {
             subscribers.push(listener)
@@ -47,17 +57,17 @@ function createStore(reducer, initialState) {
             }
         }
     }
+
+    return store
 }
 const initialState = {
     count: 0
 }
 const store = createStore(reducer, initialState)
+
 const subInc = () => {
     const state = store.getState()
     console.log(`State changed... ${state.count}`)
 }
 store.subscribe(subInc)
-store.dispatch(increment(2))
-store.dispatch(increment(2))
-store.dispatch(increment(2))
-store.dispatch(decrement(3))
+store.dispatch(incrementAsync(5))
