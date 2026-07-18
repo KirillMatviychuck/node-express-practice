@@ -24,6 +24,23 @@
       "id": 5,
       "title": "Elvis",
       "year": 2000
+    },
+    {
+      "id": 7,
+      "title": "Elvis",
+      "year": 2000
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@gmail.com",
+      "password": "123"
+    },
+    {
+      "id": 2,
+      "email": "burunduk@gmail.com",
+      "password": "$2b$10$GM6z5jCgV1rlVq88jhrTT.tzzhSewpPybIduoRsztO4rd/.fNs30u"
     }
   ]
 }
