@@ -1,35 +1,49 @@
 function reducer(state, action) {
     switch (action.type) {
-        case 'INCREMENT':
-            return { ...state, count: state.count + action.payload.num }
-        case 'DECREMENT':
-            return { ...state, count: state.count - action.payload.num }
+        case 'LOADING':
+            return { ...state, status: 'loading' }
+        case 'IDLE':
+            return { ...state, status: 'idle' }
+        case 'FAILED':
+            return { ...state, status: 'failed' }
+        case 'GET-MOVIES':
+            return { ...state, movies: action.payload }
         default:
             return state
     }
 }
-
-function increment(num) {
+const loadingStatus = () => {
     return {
-        type: 'INCREMENT',
-        payload: {
-            num
-        }
+        type: 'LOADING'
     }
 }
-function decrement(num) {
+const failedStatus = () => {
     return {
-        type: 'DECREMENT',
-        payload: {
-            num
-        }
+        type: 'FAILED'
+    }
+}
+const idleStatus = () => {
+    return {
+        type: 'IDLE'
     }
 }
 
-const incrementAsync = num => (dispatch, getState) => {
-    setTimeout(() => {
-        dispatch(increment(num))
-    }, 1000)
+const getMovies = (movies) => {
+    return {
+        type: 'GET-MOVIES',
+        payload: movies
+    }
+}
+const fetchMoviesFromAPI = () => async (dispatch, getState) => {
+    try {
+        dispatch(loadingStatus())
+        const response = await fetch('http://localhost:3000')
+        const data = await response.json()
+        dispatch(getMovies(data))
+        dispatch(idleStatus())
+    } catch {
+        dispatch(failedStatus())
+    }
 }
 
 function createStore(reducer, initialState) {
@@ -61,13 +75,10 @@ function createStore(reducer, initialState) {
     return store
 }
 const initialState = {
-    count: 0
+    count: 0,
+    status: 'idle',
+    movies: []
 }
 const store = createStore(reducer, initialState)
 
-const subInc = () => {
-    const state = store.getState()
-    console.log(`State changed... ${state.count}`)
-}
-store.subscribe(subInc)
-store.dispatch(incrementAsync(5))
+store.dispatch(fetchMoviesFromAPI())
