@@ -1,0 +1,27 @@
+const express = require('express')
+const router = require('express').Router()
+const cors = require('cors')
+const checkAuth = require('../middleware/checkAuth');
+const errorHandler = require('../middleware/errorHandler');
+const { addMovie, changeMovie, deleteMovie, getAllMovies, getMovie } = require('../controllers/movieController')
+const { loginUser, logoutUser, refreshUserToken, registerUser } = require('../controllers/authController')
+require('dotenv').config()
+
+const app = express()
+app.use(cors())
+app.use(express.json())
+
+router.post('/auth/register', registerUser)
+router.post('/auth/login', loginUser)
+router.post('/auth/logout', logoutUser)
+router.post('/auth/refresh', refreshUserToken)
+router.get('/', getAllMovies)
+router.get('/movies/:id', getMovie)
+router.post('/movies', checkAuth, addMovie)
+router.put('/movies/:id', checkAuth, changeMovie)
+router.delete('/movies/:id', checkAuth, deleteMovie)
+
+app.use('/', router)
+app.use(errorHandler);
+
+module.exports = app
