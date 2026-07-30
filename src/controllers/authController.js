@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 async function loginUser(req, res) {
     const { email, password } = req.body
     const db = await getDB()
-    console.log(db)
     const currentUser = db.data.users.find(user => user.email === email)
     if (!currentUser) {
         return res.status(401).json('Invalid credentials')
