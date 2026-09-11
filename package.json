@@ -4,6 +4,7 @@
   "main": "index.js",
   "author": "KirillMatviychuck <kirill.matviychuck@gmail.com>",
   "scripts": {
+    "start": "node index.js",
     "test": "jest"
   },
   "license": "MIT",
