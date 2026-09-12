@@ -2,6 +2,7 @@
 const request = require('supertest')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
+const app = require('../app/app')
 
 
 jest.mock('../config/db', () => ({
@@ -20,7 +21,6 @@ jest.mock('../config/db', () => ({
     }),
 }))
 
-const app = require('../app/app')
 
 describe('GET /', () => {
     it('should return a list of movies with status 200', async () => {
@@ -30,9 +30,33 @@ describe('GET /', () => {
         expect(Array.isArray(response.body)).toBe(true)
         expect(response.body.length).toBe(2)
     })
+
+})
+describe('GET / with query params', () => {
+    it('check correct return of meta data', async () => {
+        const response = await request(app)
+            .get('/')
+            .query({
+                page: 1,
+                limit: 10
+            })
+        console.log(response.body)
+
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                data: expect.any(Array),
+                currentPage: expect.any(Number),
+                totalPages: expect.any(Number),
+                totalItems: expect.any(Number),
+            })
+        )
+        expect(response.body.currentPage).toBe(1)
+        expect(response.body.totalPages).toBe(1)
+        expect(response.body.totalItems).toBe(2)
+    })
 })
 describe('GET /movies/:id', () => {
-    it('should return 404 withot wrong id', async () => {
+    it('should return 404 with wrong id', async () => {
         const response = await request(app).get('/movies/7')
 
         expect(response.status).toBe(404)

@@ -6,8 +6,10 @@ const checkAuth = require('../middleware/checkAuth');
 const errorHandler = require('../middleware/errorHandler');
 const { addMovie, changeMovie, deleteMovie, getAllMovies, getMovie } = require('../controllers/movieController')
 const { loginUser, logoutUser, refreshUserToken, registerUser } = require('../controllers/authController')
-const { emailValidationSchema,passwordValidationSchema } = require('../utils/validationSchemas')
-const validate  = require('../utils/validate')
+const { emailValidationSchema, passwordValidationSchema } = require('../utils/validationSchemas')
+const validate = require('../utils/validate')
+const loginLimiter = require('../middleware/loginRateLimiter')
+const registrationimiter = require('../middleware/registrationRateLimiter')
 require('dotenv').config()
 
 
@@ -17,12 +19,14 @@ app.use(cors())
 app.use(express.json())
 
 router.post('/auth/register',
-    checkSchema({...emailValidationSchema, ...passwordValidationSchema}),
-    validate, 
+    registrationimiter,
+    checkSchema({ ...emailValidationSchema, ...passwordValidationSchema }),
+    validate,
     registerUser)
-router.post('/auth/login', 
-    checkSchema({...emailValidationSchema, ...passwordValidationSchema}),
-    validate, 
+router.post('/auth/login',
+    loginLimiter,
+    checkSchema({ ...emailValidationSchema, ...passwordValidationSchema }),
+    validate,
     loginUser)
 router.post('/auth/logout', logoutUser)
 router.post('/auth/refresh', refreshUserToken)

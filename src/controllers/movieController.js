@@ -46,6 +46,23 @@ async function getMovie(req, res) {
 
 async function getAllMovies(req, res) {
     const db = await getDB()
+
+    const page = Number(req.query.page)
+    const limit = Number(req.query.limit)
+
+    if (page && limit) {
+        const start = (page - 1) * limit
+        const end = start + limit
+
+        const moviesResponse = db.data.movies.slice(start, end)
+
+        return res.send({
+            data: moviesResponse,
+            currentPage: page,
+            totalPages: Math.ceil(db.data.movies.length / limit),
+            totalItems: db.data.movies.length
+        })
+    }
     res.send(db.data.movies)
 }
 
