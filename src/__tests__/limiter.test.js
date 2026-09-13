@@ -39,7 +39,7 @@ describe('check auth limiter for login', () => {
 describe('check auth limiter for registration', () => {
     it('over 5 request in 15 minutes', async () => {
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 10; i++) {
             const response = await request(app)
                 .post('/auth/register')
                 .send({ email: 'jonny@gmail.com', password: '555557' })
