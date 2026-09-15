@@ -54,3 +54,4 @@ describe('check auth limiter for registration', () => {
         expect(response.status).toBe(429)
     })
 })
+

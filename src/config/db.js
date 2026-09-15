@@ -1,7 +1,7 @@
 const { JSONFilePreset } = require('lowdb/node')
 const path = require('path')
 
-const defaultData = { movies: [], users: [], refreshTokens: [] }
+const defaultData = { movies: [], users: [], refreshTokens: [], avatar: '' }
 
 let dbInstance = null;
 

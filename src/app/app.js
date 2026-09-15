@@ -9,7 +9,22 @@ const { loginUser, logoutUser, refreshUserToken, registerUser } = require('../co
 const { emailValidationSchema, passwordValidationSchema } = require('../utils/validationSchemas')
 const validate = require('../utils/validate')
 const loginLimiter = require('../middleware/loginRateLimiter')
-const registrationimiter = require('../middleware/registrationRateLimiter')
+const registrationimiter = require('../middleware/registrationRateLimiter');
+const { addUserAvatar } = require('../controllers/userController');
+const multer = require('multer')
+const upload = multer({
+    dest: 'uploads/',
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5 MB
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images are allowed'));
+        }
+    }
+});
 require('dotenv').config()
 
 
@@ -35,6 +50,7 @@ router.get('/movies/:id', getMovie)
 router.post('/movies', checkAuth, addMovie)
 router.put('/movies/:id', checkAuth, changeMovie)
 router.delete('/movies/:id', checkAuth, deleteMovie)
+router.post('/api/upload', upload.single('avatar'), addUserAvatar)
 
 app.use('/', router)
 app.use(errorHandler);
