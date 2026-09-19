@@ -59,7 +59,7 @@ async function registerUser(req, res) {
     }
     res.status(201).json({ message: 'User registered' })
 }
- 
+
 async function refreshUserToken(req, res) {
     const db = await getDB()
     const { refreshToken } = req.body

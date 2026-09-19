@@ -10,7 +10,7 @@ const { emailValidationSchema, passwordValidationSchema } = require('../utils/va
 const validate = require('../utils/validate')
 const loginLimiter = require('../middleware/loginRateLimiter')
 const registrationimiter = require('../middleware/registrationRateLimiter');
-const { addUserAvatar } = require('../controllers/userController');
+const { addMoviePoster } = require('../controllers/movieController');
 const multer = require('multer')
 const upload = multer({
     dest: 'uploads/',
@@ -50,7 +50,7 @@ router.get('/movies/:id', getMovie)
 router.post('/movies', checkAuth, addMovie)
 router.put('/movies/:id', checkAuth, changeMovie)
 router.delete('/movies/:id', checkAuth, deleteMovie)
-router.post('/api/upload', upload.single('avatar'), addUserAvatar)
+router.post('/movies/:id/poster', upload.single('file'), addMoviePoster)
 
 app.use('/', router)
 app.use(errorHandler);

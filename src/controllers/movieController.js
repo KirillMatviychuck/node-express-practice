@@ -66,7 +66,29 @@ async function getAllMovies(req, res) {
     res.send(db.data.movies)
 }
 
+
+async function addMoviePoster(req, res) {
+    const id = Number(req.params.id)
+    const poster = req.file
+    console.log(poster)
+
+    const db = await getDB()
+    if (!id) {
+        return res.status(400).json({ error: 'ID is required' })
+    }
+
+    const targetMovie = db.data.movies.find(movie => movie.id === id)
+    if (!targetMovie) {
+        return res.status(404).json({ error: 'Such movie is missing' })
+    }
+
+    db.data.movies = db.data.movies.map(movie => movie.id === id ? { ...movie, moviePoster: poster.path } : movie)
+    await db.write()
+    const response = db.data.movies.find(movie => movie.id === id)
+    res.json({ response })
+}
+
 module.exports = {
-    addMovie, getMovie, deleteMovie, changeMovie, getAllMovies
+    addMovie, getMovie, deleteMovie, changeMovie, getAllMovies, addMoviePoster
 
 }

@@ -1,8 +1,8 @@
 // src/__tests__/movie.test.js
 const request = require('supertest')
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const app = require('../app/app')
+const fs = require('fs/promises');
 
 
 jest.mock('../config/db', () => ({
@@ -157,5 +157,36 @@ describe('DELETE /movies/:id', () => {
             .set('Authorization', `Bearer ${accessToken}`)
 
         expect(response.status).toBe(404)
+    })
+})
+
+describe('POST /movies/:id/poster', () => {
+    let uploadedFile;
+
+    it('must return movie with moviePoster field when request was successful', async () => {
+
+        const response = await request(app)
+            .post('/movies/2/poster')
+            .attach('file', Buffer.from('fake image'), {
+                filename: 'file.jpg',
+                contentType: 'image/jpeg'
+            });
+        uploadedFile = response.body.response.moviePoster;
+        const filePath = `${response.body.response.moviePoster}`;
+
+        expect(response.status).toBe(200)
+        expect(response.body.response).toHaveProperty('id');
+        expect(response.body.response).toHaveProperty('title');
+        expect(response.body.response).toHaveProperty('moviePoster');
+        expect(response.body.response.moviePoster).toBeTruthy();
+        expect(response.body.response.id).toBe(2);
+        await expect(fs.access(filePath)).resolves.toBeUndefined();
+    })
+
+    afterEach(async () => {
+        if (uploadedFile) {
+            await fs.unlink(uploadedFile);
+            uploadedFile = null;
+        }
     })
 })

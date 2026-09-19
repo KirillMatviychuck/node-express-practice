@@ -8,7 +8,8 @@
     {
       "id": 2,
       "title": "The Matrix",
-      "year": 1999
+      "year": 1999,
+      "moviePoster": "uploads/b7323fc006cc6c25c0029b70b941791a"
     },
     {
       "id": 3,
