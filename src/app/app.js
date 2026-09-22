@@ -48,7 +48,7 @@ router.post('/auth/refresh', refreshUserToken)
 router.get('/', getAllMovies)
 router.get('/movies/:id', getMovie)
 router.post('/movies', checkAuth, addMovie)
-router.put('/movies/:id', checkAuth, changeMovie)
+router.patch('/movies/:id', checkAuth, changeMovie)
 router.delete('/movies/:id', checkAuth, deleteMovie)
 router.post('/movies/:id/poster', upload.single('file'), addMoviePoster)
 

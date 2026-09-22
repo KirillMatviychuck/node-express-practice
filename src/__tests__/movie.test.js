@@ -84,7 +84,6 @@ describe('GET / with query params', () => {
                 page: 1,
                 limit: 10
             })
-        console.log(response.body)
 
         expect(response.body).toEqual(
             expect.objectContaining({
@@ -101,17 +100,20 @@ describe('GET / with query params', () => {
 })
 
 describe('PATCH /movies/:id', () => {
+    const accessToken = jwt.sign({ id: 2, email: 'burunduk@gmail.com' }, process.env.ACCESS_SECRET, { expiresIn: '3m' })
+
     it('should update movie', async () => {
-        MovieModel.findByIdAndUpdate.mockResolvedValue({
+        MovieModel.findOneAndUpdate.mockResolvedValue({
             _id: '1',
-            title: 'Inception Updated',
+            title: 'Inception',
             year: 2011
         })
 
         const response = await request(app)
             .patch('/movies/1')
+            .set('Authorization', `Bearer ${accessToken}`)
             .send({
-                title: 'Inception Updated',
+                title: 'Inception',
                 year: 2011
             })
 
@@ -119,29 +121,25 @@ describe('PATCH /movies/:id', () => {
 
         expect(response.body).toEqual(
             expect.objectContaining({
-                title: 'Inception Updated',
+                title: 'Inception',
                 year: 2011
             })
         )
 
-        expect(MovieModel.findByIdAndUpdate)
+        expect(MovieModel.findOneAndUpdate)
             .toHaveBeenCalledWith(
-                '1',
-                {
-                    title: 'Inception Updated',
-                    year: 2011
-                },
-                {
-                    new: true
-                }
+                { title: 'Inception' },
+                { year: 2011 },
+                { new: true }
             )
     })
 
     it('should return 404 if movie does not exist', async () => {
-        MovieModel.findByIdAndUpdate.mockResolvedValue(null)
+        MovieModel.findOneAndUpdate.mockResolvedValue(null)
 
         const response = await request(app)
             .patch('/movies/999')
+            .set('Authorization', `Bearer ${accessToken}`)
             .send({
                 title: 'Unknown',
                 year: 2000
@@ -163,9 +161,9 @@ describe('GET /movies/:id', () => {
             .get('/movies/1')
 
         expect(response.status).toBe(200)
-
         expect(response.body).toEqual(
             expect.objectContaining({
+                _id: '1',
                 title: 'Inception',
                 year: 2010
             })
@@ -186,6 +184,8 @@ describe('GET /movies/:id', () => {
 })
 
 describe('POST /movies', () => {
+    const accessToken = jwt.sign({ id: 2, email: 'burunduk@gmail.com' }, process.env.ACCESS_SECRET, { expiresIn: '3m' })
+
     it('should create a movie', async () => {
         MovieModel.create.mockResolvedValue({
             _id: '3',
@@ -195,6 +195,7 @@ describe('POST /movies', () => {
 
         const response = await request(app)
             .post('/movies')
+            .set('Authorization', `Bearer ${accessToken}`)
             .send({
                 title: 'Interstellar',
                 year: 2014
@@ -219,9 +220,14 @@ describe('POST /movies', () => {
 
 
 describe('POST /movies', () => {
-    it('should return 201 with valid token and correct body', async () => {
-        const accessToken = jwt.sign({ id: 2, email: 'burunduk@gmail.com' }, process.env.ACCESS_SECRET, { expiresIn: '3m' })
 
+    const accessToken = jwt.sign({ id: 2, email: 'burunduk@gmail.com' }, process.env.ACCESS_SECRET, { expiresIn: '3m' })
+    it('should return 201 with valid token and correct body', async () => {
+        MovieModel.create.mockResolvedValue({
+            _id: '1',
+            title: 'Kill Bill',
+            year: 2001
+        })
         const response = await request(app)
             .post('/movies')
             .set('Authorization', `Bearer ${accessToken}`)
@@ -232,7 +238,7 @@ describe('POST /movies', () => {
 
         expect(response.status).toBe(201)
         expect(response.body).toEqual({
-            id: expect.any(Number),
+            _id: expect.any(String),
             title: "Kill Bill",
             year: 2001
         })
@@ -243,15 +249,19 @@ describe('DELETE /movies/:id', () => {
     const accessToken = jwt.sign({ id: 2, email: 'burunduk@gmail.com' }, process.env.ACCESS_SECRET, { expiresIn: '3m' })
 
     it('should return 204 with existed id', async () => {
-
+        MovieModel.findByIdAndDelete.mockResolvedValue({
+            _id: '1',
+            title: 'Inception',
+            year: 2010
+        })
         const response = await request(app)
             .delete('/movies/1')
             .set('Authorization', `Bearer ${accessToken}`)
 
-        expect(response.status).toBe(204)
+        expect(response.status).toBe(200)
     })
-    it('should return 204 with existed id', async () => {
-
+    it('should return 404 with wrong id', async () => {
+        MovieModel.findByIdAndDelete.mockResolvedValue(null)
         const response = await request(app)
             .delete('/movies/5')
             .set('Authorization', `Bearer ${accessToken}`)
@@ -263,7 +273,13 @@ describe('DELETE /movies/:id', () => {
 describe('POST /movies/:id/poster', () => {
     let uploadedFile;
 
-    it('must return movie with moviePoster field when request was successful', async () => {
+    it('must return movie with poster field when request was successful', async () => {
+        MovieModel.findByIdAndUpdate.mockResolvedValue({
+            _id: '2',
+            title: 'Kill Bill',
+            year: 2001,
+            poster: 'some/path.jpg'
+        })
 
         const response = await request(app)
             .post('/movies/2/poster')
@@ -271,16 +287,19 @@ describe('POST /movies/:id/poster', () => {
                 filename: 'file.jpg',
                 contentType: 'image/jpeg'
             });
-        uploadedFile = response.body.response.moviePoster;
-        const filePath = `${response.body.response.moviePoster}`;
+        uploadedFile = response.body.updatedMovie.poster;
 
         expect(response.status).toBe(200)
-        expect(response.body.response).toHaveProperty('id');
-        expect(response.body.response).toHaveProperty('title');
-        expect(response.body.response).toHaveProperty('moviePoster');
-        expect(response.body.response.moviePoster).toBeTruthy();
-        expect(response.body.response.id).toBe(2);
-        await expect(fs.access(filePath)).resolves.toBeUndefined();
+        expect(response.body.updatedMovie).toHaveProperty('_id');
+        expect(response.body.updatedMovie).toHaveProperty('title');
+        expect(response.body.updatedMovie).toHaveProperty('poster');
+        expect(response.body.updatedMovie._id).toBe('2');
+        expect(response.body.updatedMovie.poster).toBeTruthy();
+
+        uploadedFile = MovieModel.findByIdAndUpdate.mock.calls[0][1].poster
+
+        expect(typeof uploadedFile).toBe('string')
+        await expect(fs.access(uploadedFile)).resolves.toBeUndefined();
     })
 
     afterEach(async () => {

@@ -29,8 +29,8 @@ async function changeMovie(req, res, next) {
             { title },
             { year },
             { new: true }
-
         )
+
         if (!response) {
             return res.status(404).json('Not found')
         }
@@ -45,7 +45,7 @@ async function deleteMovie(req, res, next) {
         const id = req.params.id
 
         const response = await MovieModel.findByIdAndDelete(id)
-        console.log(response, 'RESPONSE AFTER DELETING')
+
         if (!response) {
             return res.status(404).json({ error: 'Movie with such id does not exist' })
         }
@@ -56,14 +56,17 @@ async function deleteMovie(req, res, next) {
 
 };
 
-async function getMovie(req, res) {
-    const db = await getDB()
-    const id = +req.params.id
-    const result = db.data.movies.find(movie => movie.id === id)
-    if (!result) {
-        return res.status(404).send('Not found')
+async function getMovie(req, res, next) {
+    try {
+        const id = req.params.id
+        const response = await MovieModel.findById(id)
+        if (!response) {
+            return res.status(404).send('Not found')
+        }
+        res.json(response)
+    } catch (error) {
+        next(error)
     }
-    res.send(result)
 };
 
 async function getAllMovies(req, res, next) {
