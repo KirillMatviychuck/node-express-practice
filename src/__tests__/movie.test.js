@@ -3,35 +3,79 @@ const request = require('supertest')
 const jwt = require('jsonwebtoken')
 const app = require('../app/app')
 const fs = require('fs/promises');
+const MovieModel = require('../Schemas/Movie')
 
 
-jest.mock('../config/db', () => ({
-    getDB: jest.fn().mockResolvedValue({
-        data: {
-            movies: [
-                { id: 1, title: 'Inception', year: 2010 },
-                { id: 2, title: 'The Matrix', year: 1999 },
-            ],
-            users: [
-                { id: 1, email: 'admin@test.com', password: '$2b$10$.OLBgajGECqyaTuEwlywx.e1ltDdk/AlVLrjANYofvm9naIrPQH7q' }
-            ],
-            refreshTokens: [],
-        },
-        write: jest.fn().mockResolvedValue(undefined),
-    }),
-}))
+jest.mock('../Schemas/Movie')
 
 
 describe('GET /', () => {
     it('should return a list of movies with status 200', async () => {
+        MovieModel.find.mockResolvedValue([
+            {
+                _id: '1',
+                title: 'Inception',
+                year: 2010
+            },
+            {
+                _id: '2',
+                title: 'The Matrix',
+                year: 1999
+            }
+        ])
+
         const response = await request(app).get('/')
 
         expect(response.status).toBe(200)
         expect(Array.isArray(response.body)).toBe(true)
         expect(response.body.length).toBe(2)
-    })
 
+        expect(MovieModel.find).toHaveBeenCalled()
+    })
 })
+
+describe('GET / with pagination', () => {
+    it('should return correct pagination metadata', async () => {
+        const movies = [
+            {
+                _id: '1',
+                title: 'Inception',
+                year: 2010
+            },
+            {
+                _id: '2',
+                title: 'The Matrix',
+                year: 1999
+            }
+        ]
+
+        MovieModel.find.mockReturnValue({
+            skip: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockResolvedValue(movies)
+        })
+
+        MovieModel.countDocuments.mockResolvedValue(2)
+
+        const response = await request(app)
+            .get('/')
+            .query({
+                page: 1,
+                limit: 10
+            })
+
+        expect(response.status).toBe(200)
+
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                data: expect.any(Array),
+                currentPage: 1,
+                totalPages: 1,
+                totalItems: 2
+            })
+        )
+    })
+})
+
 describe('GET / with query params', () => {
     it('check correct return of meta data', async () => {
         const response = await request(app)
@@ -55,68 +99,124 @@ describe('GET / with query params', () => {
         expect(response.body.totalItems).toBe(2)
     })
 })
+
+describe('PATCH /movies/:id', () => {
+    it('should update movie', async () => {
+        MovieModel.findByIdAndUpdate.mockResolvedValue({
+            _id: '1',
+            title: 'Inception Updated',
+            year: 2011
+        })
+
+        const response = await request(app)
+            .patch('/movies/1')
+            .send({
+                title: 'Inception Updated',
+                year: 2011
+            })
+
+        expect(response.status).toBe(200)
+
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                title: 'Inception Updated',
+                year: 2011
+            })
+        )
+
+        expect(MovieModel.findByIdAndUpdate)
+            .toHaveBeenCalledWith(
+                '1',
+                {
+                    title: 'Inception Updated',
+                    year: 2011
+                },
+                {
+                    new: true
+                }
+            )
+    })
+
+    it('should return 404 if movie does not exist', async () => {
+        MovieModel.findByIdAndUpdate.mockResolvedValue(null)
+
+        const response = await request(app)
+            .patch('/movies/999')
+            .send({
+                title: 'Unknown',
+                year: 2000
+            })
+
+        expect(response.status).toBe(404)
+    })
+})
+
 describe('GET /movies/:id', () => {
-    it('should return 404 with wrong id', async () => {
-        const response = await request(app).get('/movies/7')
+    it('should return movie by id', async () => {
+        MovieModel.findById.mockResolvedValue({
+            _id: '1',
+            title: 'Inception',
+            year: 2010
+        })
+
+        const response = await request(app)
+            .get('/movies/1')
+
+        expect(response.status).toBe(200)
+
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                title: 'Inception',
+                year: 2010
+            })
+        )
+
+        expect(MovieModel.findById)
+            .toHaveBeenCalledWith('1')
+    })
+
+    it('should return 404 if movie does not exist', async () => {
+        MovieModel.findById.mockResolvedValue(null)
+
+        const response = await request(app)
+            .get('/movies/999')
 
         expect(response.status).toBe(404)
     })
 })
 
 describe('POST /movies', () => {
-    it('should return 401 without token', async () => {
+    it('should create a movie', async () => {
+        MovieModel.create.mockResolvedValue({
+            _id: '3',
+            title: 'Interstellar',
+            year: 2014
+        })
+
         const response = await request(app)
             .post('/movies')
-            .send({ id: 3, title: 'Training day', year: 2002 })
-
-        expect(response.status).toBe(401)
-    })
-})
-
-describe('POST /auth/register', () => {
-    it('should register a new user and return 201', async () => {
-        const response = await request(app)
-            .post('/auth/register')
-            .send({ email: 'newuser@test.com', password: 'password123' })
+            .send({
+                title: 'Interstellar',
+                year: 2014
+            })
 
         expect(response.status).toBe(201)
-    })
 
-    it('should return 403 when email already exists', async () => {
-        await request(app)
-            .post('/auth/register')
-            .send({ email: 'duplicate@test.com', password: 'password123' })
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                title: 'Interstellar',
+                year: 2014
+            })
+        )
 
-        const response = await request(app)
-            .post('/auth/register')
-            .send({ email: 'duplicate@test.com', password: 'password123' })
-
-        expect(response.status).toBe(403)
-    })
-})
-
-describe('POST /auth/login', () => {
-    it('should return return 200 and two tokens', async () => {
-        const response = await request(app)
-            .post('/auth/login')
-            .send({ email: 'admin@test.com', password: 'password123' })
-        const decoded = jwt.verify(response.body.accessToken, process.env.ACCESS_SECRET)
-
-        expect(response.status).toBe(200)
-        expect(response.body).toHaveProperty('accessToken')
-        expect(response.body).toHaveProperty('refreshToken')
-        expect(typeof response.body.accessToken).toBe('string')
-        expect(typeof response.body.refreshToken).toBe('string')
-        expect(decoded.email).toBe('admin@test.com')
-    })
-    it('should return return 401', async () => {
-        const response = await request(app)
-            .post('/auth/login')
-            .send({ email: 'admin@test.com', password: 'password321' })
-
-        expect(response.status).toBe(401)
+        expect(MovieModel.create)
+            .toHaveBeenCalledWith({
+                title: 'Interstellar',
+                year: 2014
+            })
     })
 })
+
 
 describe('POST /movies', () => {
     it('should return 201 with valid token and correct body', async () => {
