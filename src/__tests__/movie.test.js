@@ -1,4 +1,3 @@
-// src/__tests__/movie.test.js
 const request = require('supertest')
 const jwt = require('jsonwebtoken')
 const app = require('../app/app')
